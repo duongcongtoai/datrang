@@ -30,7 +30,7 @@ async fn build_lakehouse_destination(
     db: &String,
     state: PostgresStore,
 ) -> Result<PostgresLakehouse<PostgresStore>, anyhow::Error> {
-    let conn_str = format!("host=localhost user=postgres password=postgres dbname=app port=5432");
+    let conn_str = format!("host={host} user={user} password={password} dbname={db} port={port}");
     // maybe using connection pool?
 
     let (client, connection) = tokio_postgres::connect(&conn_str, NoTls).await?;
@@ -74,7 +74,7 @@ async fn main_ingestor(pg_connection_config: PgConnectionConfig) -> Result<(), a
 
     // Create and start the pipeline
     let mut pipeline = Pipeline::new(pipeline_config, store.clone(), destination);
-    let maybe_result = pipeline.start().await?;
+    pipeline.start().await?;
 
     pipeline.wait().await?;
     Ok(())
