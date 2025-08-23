@@ -1,0 +1,8 @@
+{"timestamp":"2025-08-23T10:33:04.634650Z","level":"INFO","fields":{"message":"sentry not configured for api, skipping initialization"}}
+{"timestamp":"2025-08-23T10:33:04.634786Z","level":"ERROR","fields":{"message":"invalid command: migration"}}
+{"timestamp":"2025-08-23T10:33:11.589911Z","level":"INFO","fields":{"message":"sentry not configured for api, skipping initialization"}}
+{"timestamp":"2025-08-23T10:33:11.590115Z","level":"ERROR","fields":{"message":"invalid command: --help"}}
+{"timestamp":"2025-08-23T10:33:16.316682Z","level":"INFO","fields":{"message":"sentry not configured for api, skipping initialization"}}
+{"timestamp":"2025-08-23T10:33:16.316873Z","level":"ERROR","fields":{"message":"invalid command: help"}}
+{"timestamp":"2025-08-23T10:34:18.394135Z","level":"INFO","fields":{"message":"sentry not configured for api, skipping initialization"}}
+{"timestamp":"2025-08-23T10:56:30.276729Z","level":"INFO","fields":{"message":"sentry not configured for api, skipping initialization"}}

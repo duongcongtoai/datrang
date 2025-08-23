@@ -1,0 +1,33 @@
+[package]
+name = "datrang-ingestor"
+version = "0.1.0"
+edition = "2024"
+
+
+[dependencies]
+etl = { path = "/home/toai/proj/rust/etl/etl" }
+datafusion = { version = "49.0.0" }
+tokio = { version = "1", features = [
+    "macros",
+    "rt-multi-thread",
+    "signal",
+    "time",
+] }
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-trait = "0.1.89"
+url = "2.5.4"
+bytes = "1.10"
+object_store = "0.12.3"
+tempfile = "3.20.0"
+futures = "0.3.31"
+arrow = "56.0.0"
+config = "0.15.14"
+secrecy = "0.10.3"
+postgres-protocol = "0.6.8"
+tokio-postgres = "0.7.13"
+sqlx = "0.8.6"

@@ -49,10 +49,10 @@ use datafusion::physical_plan::ExecutionPlan;
 use datafusion::physical_plan::metrics::ExecutionPlanMetricsSet;
 use datafusion::prelude::*;
 
-use arrow::array::{ArrayRef, Int32Array, RecordBatch, StringArray};
-use arrow::datatypes::SchemaRef;
 use async_trait::async_trait;
 use bytes::Bytes;
+use datafusion::arrow::array::{ArrayRef, Int32Array, RecordBatch, StringArray};
+use datafusion::arrow::datatypes::SchemaRef;
 use datafusion::datasource::memory::DataSourceExec;
 use futures::FutureExt;
 use futures::future::BoxFuture;

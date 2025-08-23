@@ -10,6 +10,8 @@ Tech stacks I will use:
 - Rust (I cannot apply for Rust jobs because people don't believe I can efficiently write Rust &#128546; )
 - Datafusion (A big fan, also a project I am contributing to)
 
+This looks somewhat similar to the combo of Debezium: https://debezium.io/blog/2021/10/20/using-debezium-create-data-lake-with-apache-iceberg/
+
 ## High level diagram
 
 ### Ingestion flow
@@ -20,11 +22,6 @@ Postgres -> logical replication -> Ingestor -> Object store (Parquet)
                                         --> Secondary index (Postgres)
 ```
 
-There is an alternative approach, and also quicker to implement, is to use an extension that
-automatically write data from Postgres to Parquet: https://github.com/CrunchyData/pg_parquet/
-And maintain a background job to populate secondary index for these parquet files.
-
-At the first stage of this project, I will go with the extension approach to speed things up.
 ### Query flow
 ```
 Query -> Datafusion framework -> Custom Postgres TableProvider -> Object store (Parquet)
