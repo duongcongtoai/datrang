@@ -2,6 +2,54 @@
 
 ### Postgres
 Metastore table
+```
+-- Action types mirror Delta’s log: protocol | metadata | add | remove | commit | txn
+CREATE TYPE delta_action AS ENUM ('protocol','metadata','add','remove','commit','txn');
+
+CREATE TABLE delta_log_action (
+  table_id           UUID           NOT NULL,
+  version            BIGINT         NOT NULL,         -- commit version (0,1,2,...)
+  ordinal            INT            NOT NULL,         -- order of actions within the same version
+  action_type        delta_action   NOT NULL,
+
+  -- ---- commitInfo (optional on each row; typically one per version) ----
+  commit_ts          TIMESTAMPTZ,
+  commit_user        TEXT,
+  operation          TEXT,           -- INSERT, UPDATE, DELETE, MERGE, OPTIMIZE, etc.
+  operation_params   JSONB,
+
+  -- ---- protocol ----
+  min_reader_version INT,
+  min_writer_version INT,
+  reader_features    TEXT[],
+  writer_features    TEXT[],
+
+  -- ---- metadata ----
+  table_name         TEXT,
+  description        TEXT,
+  schema_json        JSONB,          -- schema as JSON
+  partition_columns  TEXT[],         -- ordered list of partition column names
+  configuration      JSONB,          -- table properties (key→value)
+
+  -- ---- addFile ----
+  path               TEXT,           -- relative file path (e.g., date=2025-08-24/part-0000.parquet)
+  partition_values   JSONB,          -- map col→value (strings/null); {} if unpartitioned
+  size_bytes         BIGINT,
+  modification_time  TIMESTAMPTZ,
+  data_change        BOOLEAN,
+  num_records        BIGINT,
+  stats_json         JSONB,          -- {"numRecords":..,"minValues":{..},"maxValues":{..},"nullCount":{..}}
+
+  -- ---- removeFile ----
+  deletion_time      TIMESTAMPTZ,    -- tombstone time
+
+  -- ---- txn (streaming/exactly-once) ----
+  app_id             TEXT,
+  app_version        BIGINT,
+
+  PRIMARY KEY (table_id, version, ordinal)
+);
+```
 
 Because i just want to learn how delta lake works, this schema will reflect what similar to the delta log. Meaning
 each row reflect a modification/action of the system, and stored in an immutable/append only fashion, instead of keeping the latest snapshot of all active directory/parquet file locations.
@@ -29,6 +77,13 @@ O(changed files) metadata cost
 
 A commit records only the delta (adds/removes, stats). Updating a single “latest snapshot” row would still require reconstructing and rewriting large blobs of metadata under concurrency. The log lets you append tiny records.
 => This is true, let's say there is a DML command that needs to record update action on multiple parquet file (the update filter spans across multiple partition values, or even the whole data), in this case, concurrency can be a problem, as it may need to lock the a large portion of metastore. But how does "append only" approach improve this? 
+=> Thoughts: with the information of logs, conflicting writers can actually make smart decision whether or not the new versions invalidate its result or not (by evaluating the partition values changed/file changed). If no conflict is detected, the retrying writer can just push for another commit with the latest version.
+=> However, how does this work for writes which span humongous amount of data, maybe it still needs some pessimistic locking support?
+Some thought: https://www.buoyantdata.com/blog/2024-12-31-high-concurrency-logstore.html
+Strategy:
+- parallelism by partition key (on the input stream, in our case the logical replication stream consumer)
+- tune batch size and batch windows (couchbase/etl crate has similar setting)
+I am excited to see after the implementation, what is the ingestion throughput. Not to mention the VACUUM/OPTIMIZE workload can be heavy-lefting operation
 
 
 Time travel, audit, and reproducibility (for free)
