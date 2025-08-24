@@ -116,20 +116,26 @@ pub struct PostgresLakehouse<S: StateStore + SchemaStore> {
     replication_store: S,
 }
 
-unsafe impl<S: StateStore + SchemaStore> Sync for PostgresLakehouse<S> {}
+// unsafe impl<S: StateStore + SchemaStore> Sync for PostgresLakehouse<S> {}
 
 impl<S: StateStore + SchemaStore> PostgresLakehouse<S> {
     async fn handle_event(&self, event: &etl::types::Event) -> Result<(), anyhow::Error> {
         match event {
             // TODO: find out how this works, how do we store the schema of a newly created table
-            Event::Relation(rela) => {
+            // On
+            Event::Relation(_) | Event::Commit(_) | Event::Begin(_) => {
                 return Ok(());
             }
 
             // TODO: implement checkpoint
             // else the lakehouse may contains inconsistent data comparing to the original
             // in postgres
-            Event::Commit(commit) => Ok(()),
+            Event::Update(update) => {
+                // if non primary key updated
+                // if primary key itself is updated
+                println!("updating {update:?}");
+                Ok(())
+            }
             Event::Insert(insert) => {
                 // let mapping = self
                 //     .replication_store
@@ -146,38 +152,22 @@ impl<S: StateStore + SchemaStore> PostgresLakehouse<S> {
                 // find event
                 Ok(())
             }
-            Event::Begin(begin_evt) => Ok(()),
-            Event::Commit(commit) => {
-                // pub start_lsn: PgLsn,
-                // /// LSN position where the transaction committed.
-                // pub commit_lsn: PgLsn,
-                // /// Transaction commit flags from PostgreSQL.
-                // pub flags: i8,
-                // /// Final LSN position after the transaction.
-                // pub end_lsn: u64,
-                // /// Transaction commit timestamp in PostgreSQL format.
-                // pub timestamp: i64,
-                Ok(())
-            }
             _ => {
                 unimplemented!()
             }
         }
     }
     async fn handle_events(&self, events: Vec<etl::types::Event>) -> Result<(), anyhow::Error> {
-        println!("received events {:?}", events);
-
         // each of these events in ops are continous mutating event
         // within 1 transaction
         for evt in events {
             self.handle_event(&evt).await?;
         }
-        println!("done processing event");
 
         Ok(())
     }
 }
-impl<S: StateStore + SchemaStore> Destination for PostgresLakehouse<S> {
+impl<S: StateStore + SchemaStore + Sync> Destination for PostgresLakehouse<S> {
     /// This operation is called during initial table synchronization to ensure the
     /// destination table starts from a clean state before bulk loading. The operation
     /// should be atomic and handle cases where the table may not exist.
@@ -202,7 +192,6 @@ impl<S: StateStore + SchemaStore> Destination for PostgresLakehouse<S> {
         &self,
         events: Vec<etl::types::Event>,
     ) -> impl Future<Output = etl::error::EtlResult<()>> + Send {
-        println!("writing events {:?}", events);
         async move {
             let result = self.handle_events(events).await;
             match result {
